@@ -3183,51 +3183,49 @@ async function requestWithdrawal() {
     toggleLoader(true, 'Processing reservation...');
 
     try {
-        const { data: freshUser, error: freshErr } = await supabase
-            .from('profiles').select('balance, total_withdrawals, current_plan_id').eq('id', currentUser.id).single();
+        const { data: pendingRows, error: pendingErr } = await supabase
+            .from('withdrawals')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .eq('status', 'pending')
+            .limit(1);
 
-        if (freshErr || !freshUser) throw new Error('Could not verify account balance.');
-        if (!parseInt(freshUser.current_plan_id || 0)) {
+        if (pendingErr) throw pendingErr;
+        if (pendingRows && pendingRows.length > 0) {
             toggleLoader(false);
-            return showToast('An active VIP tier is required before you can withdraw your referral bonus or balance.');
-        }
-
-        const freshBal = parseFloat(freshUser.balance || 0);
-        if (amount > freshBal) {
-            toggleLoader(false);
-            renderWithdrawalAmountOptions(freshBal);
-            return showToast('Insufficient available balance. Reserved funds cannot be re-withdrawn.');
+            return showToast('🚫 You already have a pending withdrawal awaiting admin review.');
         }
 
         const feePct = appSettings ? parseFloat(appSettings.withdrawal_fee_percent || 15) : 15;
         const fee = amount * (feePct / 100);
         const net = amount - fee;
-        const newBal = freshBal - amount;
-        const newTotalWd = parseFloat(freshUser.total_withdrawals || 0) + amount;
 
-        const { error: balUpdErr } = await supabase
-            .from('profiles').update({ balance: newBal, total_withdrawals: newTotalWd }).eq('id', currentUser.id);
+        const { data: result, error: atomicErr } = await supabase.rpc('request_withdrawal_atomic', {
+            p_user_id: currentUser.id,
+            p_amount: amount,
+            p_fee_amount: fee,
+            p_net_amount: net,
+            p_bank_name: currentUser.bank_name,
+            p_account_number: currentUser.account_number,
+            p_account_name: currentUser.account_name
+        });
 
-        if (balUpdErr) throw balUpdErr;
-
-        let wdInserted = false;
-        try {
-            const { error: insErr } = await supabase.rpc('insert_withdrawal', {
-                p_user_id: currentUser.id, p_amount: amount, p_fee_amount: fee, p_net_amount: net,
-                p_bank_name: currentUser.bank_name, p_account_number: currentUser.account_number,
-                p_account_name: currentUser.account_name
-            });
-            if (!insErr) wdInserted = true;
-        } catch (_) {}
-
-        if (!wdInserted) {
-            const { error: directWdErr } = await supabase.from('withdrawals').insert([{
-                user_id: currentUser.id, amount: amount, fee_amount: fee, net_amount: net,
-                bank_name: currentUser.bank_name, account_number: currentUser.account_number,
-                account_name: currentUser.account_name, status: 'pending'
-            }]);
-            if (directWdErr) throw directWdErr;
+        if (atomicErr) {
+            const msg = (atomicErr.message || '').toLowerCase();
+            if (msg.includes('pending withdrawal')) {
+                throw new Error('You already have a pending withdrawal awaiting admin review.');
+            }
+            if (msg.includes('insufficient available balance')) {
+                const { data: latestUser } = await supabase.from('profiles').select('balance').eq('id', currentUser.id).single();
+                const latestBal = parseFloat((latestUser && latestUser.balance) || 0);
+                renderWithdrawalAmountOptions(latestBal);
+            }
+            throw atomicErr;
         }
+
+        const row = Array.isArray(result) ? result[0] : result;
+        const newBal = parseFloat((row && row.new_balance) ?? ((currentUser && currentUser.balance) || 0) - amount);
+        const newTotalWd = parseFloat((row && row.new_total_withdrawals) ?? ((currentUser && currentUser.total_withdrawals) || 0) + amount);
 
         try {
             const wDesc = `Withdrawal Request — ₦${fmt(amount)} (Fee: ₦${fmt(fee)}, Net: ₦${fmt(net)})`;
@@ -3925,13 +3923,21 @@ async function approveWithdrawal(withdrawalId, userId, amount) {
     if (!supabase) return showToast('Connection error. Refresh and try again.');
     toggleLoader(true);
     try {
-        await supabase.from('withdrawals').update({ status: 'confirmed' }).eq('id', withdrawalId);
+        const { data: result, error: approveErr } = await supabase.rpc('approve_withdrawal_atomic', {
+            p_withdrawal_id: withdrawalId,
+            p_user_id: userId
+        });
+        if (approveErr) throw approveErr;
+
+        const row = Array.isArray(result) ? result[0] : result;
+        const approvedAmount = Number((row && row.amount) ?? amount);
+
         try {
             await supabase.rpc('insert_history', {
                 p_user_id: userId,
                 p_type: 'withdrawal',
-                p_amount: amount,
-                p_description: `Withdrawal Approved & Paid — ₦${fmt(amount)}`,
+                p_amount: approvedAmount,
+                p_description: `Withdrawal Approved & Paid — ₦${fmt(approvedAmount)}`,
                 p_status: 'confirmed'
             });
         } catch (histErr) {
@@ -3948,15 +3954,16 @@ async function declineWithdrawal(withdrawalId, userId, amount) {
     if (!supabase) return showToast('Connection error. Refresh and try again.');
     toggleLoader(true, 'Refunding reserved balance...');
     try {
-        const amtNum = parseFloat(amount);
-        const { data: profile, error: pErr } = await supabase.from('profiles').select('balance, total_withdrawals').eq('id', userId).single();
-        if (pErr || !profile) throw new Error('Profile fetch failed');
+        const { data: result, error: declineErr } = await supabase.rpc('decline_withdrawal_atomic', {
+            p_withdrawal_id: withdrawalId,
+            p_user_id: userId
+        });
+        if (declineErr) throw declineErr;
 
-        const refundedBal = parseFloat(profile.balance || 0) + amtNum;
-        const refundedTotalWd = Math.max(0, parseFloat(profile.total_withdrawals || 0) - amtNum);
-
-        await supabase.from('profiles').update({ balance: refundedBal, total_withdrawals: refundedTotalWd }).eq('id', userId);
-        await supabase.from('withdrawals').update({ status: 'declined' }).eq('id', withdrawalId);
+        const row = Array.isArray(result) ? result[0] : result;
+        const amtNum = Number((row && row.amount) ?? amount);
+        const refundedBal = Number((row && row.new_balance) ?? 0);
+        const refundedTotalWd = Number((row && row.new_total_withdrawals) ?? 0);
 
         try {
             const rDesc = `Withdrawal Declined (Refunded) — ₦${fmt(amtNum)}`;
