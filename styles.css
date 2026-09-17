@@ -1,0 +1,43 @@
+html, body {
+            width: 100%;
+            min-height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background-color: #03060c;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .ambient-grid {
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 65%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 36px 36px, 36px 36px;
+        }
+
+        @keyframes toastSlideUp {
+            from { opacity: 0; transform: translate(-50%, 20px) scale(0.96); }
+            to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+        .toast-animate { animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+        @keyframes microShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+            animation: microShimmer 2s infinite;
+        }
+
+
+/* Daily Surprise Gift */
+.gift-launcher { position: relative; }
+.gift-launcher-glow { position:absolute; width:120px; height:120px; right:8%; top:50%; transform:translateY(-50%); border-radius:999px; background:rgba(212,175,55,0.08); filter:blur(28px); pointer-events:none; }
