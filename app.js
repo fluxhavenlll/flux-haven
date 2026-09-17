@@ -2905,11 +2905,11 @@ async function loadAdminGiftData() {
             if (codeEl) codeEl.textContent = '—';
             if (statusEl) statusEl.textContent = 'No code generated yet.';
         }
-        await loadAdminGiftClaims(row?.id || null);
+        await loadAdminGiftClaims(row?.gift_code_id || null);
     } catch (e) {
         console.error('Gift admin load error:', e);
         const statusEl = document.getElementById('adminGiftStatus');
-        if (statusEl) statusEl.textContent = 'Gift-code database setup required.';
+        if (statusEl) statusEl.textContent = 'Unable to load today\u2019s gift code.';
         await loadAdminGiftClaims(null);
     }
 }
@@ -2929,7 +2929,7 @@ async function adminGenerateTodayGiftCode() {
         document.getElementById('adminGiftTodayCode').textContent = row.code;
         document.getElementById('adminGiftStatus').textContent = 'Ready to post · maximum 10 successful claims';
         showToast('✅ Today’s gift code is ready');
-        await loadAdminGiftClaims(row.id || null);
+        await loadAdminGiftClaims(row.gift_code_id || null);
     } catch (e) {
         showToast('❌ ' + (e.message || 'Could not generate today’s code'));
     } finally {
@@ -2951,7 +2951,7 @@ async function loadAdminGiftClaims(giftCodeId = null) {
             });
             if (codeErr) throw codeErr;
             const row = Array.isArray(codeRow) ? codeRow[0] : codeRow;
-            codeId = row?.id || null;
+            codeId = row?.gift_code_id || null;
             if (countEl) countEl.textContent = `${Number(row?.claim_count || 0)} / 10`;
         }
         if (!codeId) {
@@ -3015,6 +3015,12 @@ async function startPresenceHeartbeat() {
     presenceTimer = setInterval(sendPresenceHeartbeat, 60000);
 }
 
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentUser && currentUser.role !== 'admin') {
+        sendPresenceHeartbeat();
+    }
+});
+
 function stopPresenceHeartbeat() {
     if (presenceTimer) { clearInterval(presenceTimer); presenceTimer = null; }
 }
@@ -3048,7 +3054,8 @@ async function loadAdminLiveUsers() {
         `).join('');
     } catch (e) {
         if (countEl) countEl.textContent = '—';
-        list.innerHTML = '<div class="text-center text-slate-500 py-3 text-[10px]">Live presence is not configured yet.</div>';
+        list.innerHTML = '<div class="text-center text-red-400 py-3 text-[10px]">Unable to load live presence.</div>';
+        console.error('Live presence load error:', e);
     }
 }
 
