@@ -187,10 +187,13 @@ function switchView(targetId) {
 function navigateTo(page) {
     if (!currentUser) return;
     if (_navLoadingActive) return;
-    if (page === 'adminPage' && currentUser.role !== 'admin') {
+    const isAdminUser = currentUser.role === 'admin';
+    if (page === 'adminPage' && !isAdminUser) {
         return showToast('🔒 Root administrative access required');
     }
-    if ((page === 'wealthCenterPage' || page === 'luckyHeartPage') && !getActiveNewFeatureVipTier(currentUser)) {
+    // Admins may open the new-feature pages for read-only preview/testing after an
+    // admin-only financial reset. Normal users still require active VIP1–VIP6.
+    if ((page === 'wealthCenterPage' || page === 'luckyHeartPage') && !isAdminUser && !getActiveNewFeatureVipTier(currentUser)) {
         return showToast('🔒 An active VIP1–VIP6 plan is required for this feature.');
     }
     if (page !== 'profilePage' && page !== 'homePage' && page !== 'adminPage' && page !== 'historyPage' && page !== 'referralPage' && page !== 'tasksPage' && page !== 'wealthCenterPage' && page !== 'luckyHeartPage' &&
@@ -3273,7 +3276,9 @@ function getActiveNewFeatureVipTier(user) {
 function updateVipFeatureVisibility() {
     const wrap = document.getElementById('newVipFeatures');
     if (!wrap) return;
-    const active = Boolean(getActiveNewFeatureVipTier(currentUser));
+    // Keep new features hidden from non-VIP users, but let admins see them after
+    // an admin-only balance reset so the features remain available for oversight.
+    const active = Boolean(currentUser?.role === 'admin' || getActiveNewFeatureVipTier(currentUser));
     wrap.classList.toggle('hidden', !active);
 }
 
@@ -3386,7 +3391,23 @@ async function loadWealthCenterPage() {
     const grid = document.getElementById('wealthPlanGrid');
     const list = document.getElementById('wealthPositionsList');
     if (!currentUser) return;
+    const isAdminUser = currentUser.role === 'admin';
     const tier = getActiveNewFeatureVipTier(currentUser);
+
+    // Admin preview mode: show the feature/plan cards after an admin financial
+    // reset without granting the admin a VIP entitlement. Actual start/claim RPCs
+    // remain VIP-gated for normal financial operations.
+    if (!tier && isAdminUser) {
+        noVip?.classList.add('hidden');
+        activeState?.classList.remove('hidden');
+        if (grid) grid.innerHTML = '<div class="md:col-span-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-[10px] text-amber-200">Admin preview: F/H Wealth Center is visible for oversight/testing. A user must have active VIP1–VIP6 to start a plan.</div>';
+        renderWealthPlanCards(WEALTH_CENTER_PLANS, []);
+        const buttons = grid?.querySelectorAll('button[onclick*="startWealthPlan"]') || [];
+        buttons.forEach(btn => { btn.disabled = true; btn.removeAttribute('onclick'); btn.textContent = 'Admin Preview'; btn.className = 'w-full h-11 rounded-xl text-xs font-black text-amber-200 bg-amber-400/10 border border-amber-400/20 cursor-not-allowed'; });
+        if (list) list.innerHTML = '<div class="glass-panel rounded-2xl p-6 text-center text-xs text-slate-500 border-white/5">No admin-owned Wealth Center positions.</div>';
+        return;
+    }
+
     if (!tier) {
         noVip?.classList.remove('hidden');
         activeState?.classList.add('hidden');
@@ -3508,6 +3529,21 @@ async function loadLuckyHeartPage() {
     if (!currentUser) return;
     const tier = getActiveNewFeatureVipTier(currentUser);
     const btn = document.getElementById('luckyHeartSpinBtn');
+    const isAdminUser = currentUser.role === 'admin';
+    if (!tier && isAdminUser) {
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+        const earned = document.getElementById('luckyHeartEarned');
+        const used = document.getElementById('luckyHeartUsed');
+        const remaining = document.getElementById('luckyHeartRemaining');
+        const qual = document.getElementById('luckyHeartQualificationText');
+        if (earned) earned.textContent = '—';
+        if (used) used.textContent = '—';
+        if (remaining) remaining.textContent = '—';
+        if (qual) qual.textContent = 'Admin preview mode — VIP entitlement required for real spins.';
+        setLuckyHeartMessage('Admin preview only. An active VIP1–VIP6 user account is required to spin Lucky Heart.');
+        renderLuckyHeartHistory([]);
+        return;
+    }
     if (!tier) {
         if (btn) btn.disabled = true;
         setLuckyHeartMessage('An active VIP1–VIP6 plan is required for Lucky Heart.');
