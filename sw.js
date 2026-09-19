@@ -1,9 +1,9 @@
-const CACHE_NAME = 'flux-haven-shell-v14';
+const CACHE_NAME = 'flux-haven-shell-v15';
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
-  './app.js',
+  './app.js?v=20260919-lucky-heart-final-15',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
