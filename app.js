@@ -3243,6 +3243,18 @@ function getWealthPlanByCode(code) {
     return WEALTH_CENTER_PLANS.find(p => p.code === code) || null;
 }
 
+function normalizeWealthPlan(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const code = String(raw.code ?? raw.plan_code ?? '').trim();
+    const name = String(raw.name ?? raw.plan_name ?? '').trim();
+    const min = Number(raw.min ?? raw.min_amount);
+    const max = Number(raw.max ?? raw.max_amount);
+    const days = Number(raw.days ?? raw.duration_days);
+    const profit = Number(raw.profit ?? raw.profit_percent);
+    if (!code || !Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(days) || !Number.isFinite(profit)) return null;
+    return { code, name: name || code, min, max, days, profit };
+}
+
 function wealthEsc(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
 }
@@ -3268,7 +3280,11 @@ function updateVipFeatureVisibility() {
 function renderWealthPlanCards(plans) {
     const grid = document.getElementById('wealthPlanGrid');
     if (!grid) return;
-    grid.innerHTML = plans.map(plan => `
+    const normalizedPlans = (Array.isArray(plans) ? plans : [])
+        .map(normalizeWealthPlan)
+        .filter(Boolean);
+    const renderPlans = normalizedPlans.length ? normalizedPlans : WEALTH_CENTER_PLANS;
+    grid.innerHTML = renderPlans.map(plan => `
         <div class="wealth-plan-card glass-panel rounded-2xl p-5 border-cyan-500/15 bg-gradient-to-b from-navy-850 to-navy-950 flex flex-col">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -3363,9 +3379,12 @@ async function loadWealthCenterPage() {
             p_password: currentUser.password || localStorage.getItem('emx_password') || ''
         });
         if (error) throw error;
-        const state = data || {};
-        renderWealthPlanCards(state.plans || WEALTH_CENTER_PLANS);
-        renderWealthPositions(state.positions || []);
+        const state = typeof data === 'string' ? JSON.parse(data) : (data || {});
+        const serverPlans = Array.isArray(state.plans)
+            ? state.plans.map(normalizeWealthPlan).filter(Boolean)
+            : [];
+        renderWealthPlanCards(serverPlans.length ? serverPlans : WEALTH_CENTER_PLANS);
+        renderWealthPositions(Array.isArray(state.positions) ? state.positions : []);
     } catch (e) {
         console.error('Wealth Center load error:', e);
         if (grid) grid.innerHTML = '<div class="md:col-span-3 text-center py-8 text-xs text-red-400">Unable to load Wealth Center right now.</div>';
@@ -3644,3 +3663,4 @@ function checkReferralLink() {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
+
