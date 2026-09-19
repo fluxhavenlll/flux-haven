@@ -1,0 +1,224 @@
+html, body {
+            width: 100%;
+            min-height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background-color: #03060c;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .ambient-grid {
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 65%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 36px 36px, 36px 36px;
+        }
+
+        @keyframes toastSlideUp {
+            from { opacity: 0; transform: translate(-50%, 20px) scale(0.96); }
+            to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+        .toast-animate { animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+        @keyframes microShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+            animation: microShimmer 2s infinite;
+        }
+
+
+/* Daily Surprise Gift */
+.gift-launcher { position: relative; }
+.gift-launcher-glow { position:absolute; width:120px; height:120px; right:8%; top:50%; transform:translateY(-50%); border-radius:999px; background:rgba(212,175,55,0.08); filter:blur(28px); pointer-events:none; }
+
+
+/* ========================================================
+   F/H WEALTH CENTER + LUCKY HEART + PWA INSTALL
+   ======================================================== */
+.new-feature-card { position: relative; overflow: hidden; }
+.new-feature-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.035) 48%, transparent 72%);
+    transform: translateX(-100%);
+    transition: transform .65s ease;
+}
+.new-feature-card:hover::after { transform: translateX(100%); }
+.new-feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.wealth-feature-icon {
+    color: #67e8f9;
+    background: rgba(6,182,212,.1);
+    border: 1px solid rgba(103,232,249,.2);
+}
+.lucky-heart-feature-icon {
+    color: #f9a8d4;
+    background: rgba(236,72,153,.1);
+    border: 1px solid rgba(249,168,212,.2);
+}
+.wealth-plan-card { min-height: 100%; }
+.wealth-progress-circle {
+    --progress: 0deg;
+    width: 116px;
+    height: 116px;
+    border-radius: 999px;
+    background: conic-gradient(#06b6d4 var(--progress), rgba(255,255,255,.08) 0deg);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 32px rgba(6,182,212,.12);
+    flex-shrink: 0;
+}
+.wealth-progress-circle::before {
+    content: '';
+    width: 88px;
+    height: 88px;
+    border-radius: 999px;
+    background: #06101b;
+    border: 1px solid rgba(255,255,255,.08);
+    position: absolute;
+}
+.wealth-progress-circle-inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+.wealth-progress-percent { font-size: 22px; font-weight: 900; letter-spacing: -.04em; color: #fff; }
+.wealth-progress-label { font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #64748b; }
+
+.lucky-heart-stage {
+    width: min(86vw, 440px);
+    aspect-ratio: 1;
+    margin: 0 auto;
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+.lucky-heart-wheel {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 50%;
+    background: conic-gradient(
+        #1b2943 0deg 36deg,
+        #223450 36deg 72deg,
+        #1b2943 72deg 108deg,
+        #223450 108deg 144deg,
+        #1b2943 144deg 180deg,
+        #223450 180deg 216deg,
+        #1b2943 216deg 252deg,
+        #223450 252deg 288deg,
+        #1b2943 288deg 324deg,
+        #223450 324deg 360deg
+    );
+    border: 8px solid #111b2d;
+    box-shadow: 0 0 0 2px rgba(236,72,153,.16), 0 0 60px rgba(236,72,153,.12), inset 0 0 35px rgba(0,0,0,.5);
+    transform: rotate(0deg);
+    transition: transform 4.2s cubic-bezier(.12,.72,.13,1);
+    will-change: transform;
+}
+.lucky-heart-wheel::before {
+    content: '';
+    position: absolute;
+    inset: 7%;
+    border-radius: 50%;
+    border: 1px dashed rgba(255,255,255,.12);
+    pointer-events: none;
+}
+.lucky-wheel-segment {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 41%;
+    transform-origin: 0 0;
+    text-align: center;
+    font-size: clamp(9px, 2.5vw, 12px);
+    line-height: 1.05;
+    font-weight: 900;
+    color: #eef2ff;
+    text-shadow: 0 1px 5px rgba(0,0,0,.7);
+    pointer-events: none;
+    transform: rotate(var(--angle)) translate(6px,-50%);
+}
+.lucky-wheel-label-0 { --angle: 18deg; }
+.lucky-wheel-label-1 { --angle: 54deg; }
+.lucky-wheel-label-2 { --angle: 90deg; }
+.lucky-wheel-label-3 { --angle: 126deg; }
+.lucky-wheel-label-4 { --angle: 162deg; }
+.lucky-wheel-label-5 { --angle: 198deg; }
+.lucky-wheel-label-6 { --angle: 234deg; }
+.lucky-wheel-label-7 { --angle: 270deg; }
+.lucky-wheel-label-8 { --angle: 306deg; }
+.lucky-wheel-label-9 { --angle: 342deg; }
+.lucky-heart-wheel-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 35% 30%, rgba(236,72,153,.26), rgba(6,12,24,.98) 72%);
+    border: 2px solid rgba(249,168,212,.22);
+    box-shadow: 0 0 35px rgba(236,72,153,.14), inset 0 0 25px rgba(0,0,0,.55);
+    z-index: 4;
+}
+.lucky-heart-spin-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 1px solid rgba(249,168,212,.28);
+    background: linear-gradient(145deg, #ec4899 0%, #be185d 100%);
+    color: white;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(236,72,153,.28);
+    transition: transform .2s ease, filter .2s ease;
+}
+.lucky-heart-spin-btn:hover { filter: brightness(1.08); transform: scale(1.04); }
+.lucky-heart-spin-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.lucky-heart-pointer {
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 13px solid transparent;
+    border-right: 13px solid transparent;
+    border-top: 26px solid #f9a8d4;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,.55));
+    z-index: 10;
+}
+@media (max-width: 420px) {
+    .lucky-heart-wheel-center { width: 86px; height: 86px; }
+    .lucky-heart-spin-btn { width: 62px; height: 62px; }
+}
