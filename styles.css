@@ -110,8 +110,8 @@ html, body {
 .wealth-progress-percent { font-size: 22px; font-weight: 900; letter-spacing: -.04em; color: #fff; }
 .wealth-progress-label { font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #64748b; }
 
-.lucky-heart-stage {
-    width: min(86vw, 440px);
+ .lucky-heart-stage {
+    width: min(88vw, 500px);
     aspect-ratio: 1;
     margin: 0 auto;
     position: relative;
@@ -123,79 +123,58 @@ html, body {
     height: 100%;
     position: relative;
     border-radius: 50%;
-    /* Ten real, equal 36° sectors. Sector 0 is centered at the top pointer. */
-    background: conic-gradient(
-        from -18deg,
-        #1b2943 0deg 36deg,
-        #223450 36deg 72deg,
-        #1b2943 72deg 108deg,
-        #223450 108deg 144deg,
-        #1b2943 144deg 180deg,
-        #223450 180deg 216deg,
-        #1b2943 216deg 252deg,
-        #223450 252deg 288deg,
-        #1b2943 288deg 324deg,
-        #223450 324deg 360deg
-    );
-    border: 8px solid #111b2d;
+    border: 7px solid #111b2d;
+    background: #101a2b;
     box-shadow: 0 0 0 2px rgba(236,72,153,.16), 0 0 60px rgba(236,72,153,.12), inset 0 0 35px rgba(0,0,0,.5);
     transform: rotate(0deg);
     transition: transform 4.2s cubic-bezier(.12,.72,.13,1);
     will-change: transform;
+    overflow: hidden;
+}
+.lucky-heart-wheel-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
     overflow: visible;
 }
-.lucky-heart-wheel::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    /* Crisp separator line at every 36° boundary. */
-    background: repeating-conic-gradient(from -18deg, transparent 0deg 35deg, rgba(255,255,255,.26) 35deg 36deg);
-    pointer-events: none;
-    z-index: 2;
+.lucky-heart-sector {
+    stroke: rgba(255,255,255,.18);
+    stroke-width: .75;
+    vector-effect: non-scaling-stroke;
 }
-.lucky-heart-wheel::before {
-    content: '';
-    position: absolute;
-    inset: 7%;
-    border-radius: 50%;
-    border: 1px dashed rgba(255,255,255,.12);
-    pointer-events: none;
-    z-index: 1;
+.lucky-heart-sector.sector-0 { fill: #1b2943; }
+.lucky-heart-sector.sector-1 { fill: #223450; }
+.lucky-heart-sector.sector-2 { fill: #1b2943; }
+.lucky-heart-sector.sector-3 { fill: #223450; }
+.lucky-heart-sector.sector-4 { fill: #1b2943; }
+.lucky-heart-sector.sector-5 { fill: #223450; }
+.lucky-heart-sector.sector-6 { fill: #1b2943; }
+.lucky-heart-sector.sector-7 { fill: #223450; }
+.lucky-heart-sector.sector-8 { fill: #1b2943; }
+.lucky-heart-sector.sector-9 { fill: #223450; }
+.lucky-heart-divider-lines line {
+    stroke: rgba(255,255,255,.34);
+    stroke-width: .55;
+    vector-effect: non-scaling-stroke;
 }
-.lucky-wheel-segment {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 74px;
-    margin-left: -37px;
-    margin-top: -14px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: clamp(6.5px, 1.75vw, 10px);
-    line-height: 1;
+.lucky-heart-wheel-outline {
+    fill: none;
+    stroke: rgba(249,168,212,.42);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+.lucky-wheel-text {
+    fill: #f8fbff;
+    font-size: 4.2px;
     font-weight: 900;
-    color: #f8fafc;
-    text-shadow: 0 1px 6px rgba(0,0,0,.82);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    paint-order: stroke;
+    stroke: rgba(4,9,18,.86);
+    stroke-width: .82px;
+    stroke-linejoin: round;
     pointer-events: none;
-    z-index: 3;
-    --radius: min(36%, 154px);
-    transform-origin: center center;
-    transform: rotate(var(--angle)) translateY(calc(-1 * var(--radius))) rotate(calc(-1 * var(--angle)));
 }
-.lucky-wheel-label-0 { --angle: 0deg; }
-.lucky-wheel-label-1 { --angle: 36deg; }
-.lucky-wheel-label-2 { --angle: 72deg; }
-.lucky-wheel-label-3 { --angle: 108deg; }
-.lucky-wheel-label-4 { --angle: 144deg; }
-.lucky-wheel-label-5 { --angle: 180deg; }
-.lucky-wheel-label-6 { --angle: 216deg; }
-.lucky-wheel-label-7 { --angle: 252deg; }
-.lucky-wheel-label-8 { --angle: 288deg; }
-.lucky-wheel-label-9 { --angle: 324deg; }
 .lucky-heart-wheel-center {
     position: absolute;
     left: 50%;
