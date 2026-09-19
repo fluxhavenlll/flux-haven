@@ -2602,7 +2602,7 @@ async function loadAdminLuckyHeartOverview() {
             p_admin_password: currentUser.password || localStorage.getItem('emx_password') || ''
         });
         if (error) throw error;
-        const state = data || {};
+        const state = typeof data === 'string' ? JSON.parse(data) : (data || {});
         const stats = state.stats || {};
         const spins = Array.isArray(state.recent_spins) ? state.recent_spins : [];
         const quals = Array.isArray(state.today_qualifications) ? state.today_qualifications : [];
@@ -2612,7 +2612,7 @@ async function loadAdminLuckyHeartOverview() {
             <div class="bg-navy-950/70 border border-white/5 rounded-xl p-3 text-center"><div class="text-[8px] text-slate-500 uppercase tracking-wider">Today's Spins</div><div class="text-xl font-black text-white mt-1">${Number(stats.today_spins || 0)}</div></div>
             <div class="bg-navy-950/70 border border-white/5 rounded-xl p-3 text-center"><div class="text-[8px] text-slate-500 uppercase tracking-wider">Today's Rewards</div><div class="text-xl font-black text-emerald-300 mt-1">₦${fmt(stats.today_reward_total || 0)}</div></div>`;
 
-        spinsEl.innerHTML = spins.length ? spins.map(r => `
+        listEl.innerHTML = spins.length ? spins.map(r => `
             <div class="bg-navy-950/70 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3">
                 <div class="min-w-0"><div class="text-xs font-bold text-white truncate">${r.username || '—'} · ${r.phone || '—'}</div><div class="text-[9px] text-slate-500 mt-0.5">${r.prize_label || 'Lucky Heart'} · ${r.created_at ? new Date(r.created_at).toLocaleString('en-NG') : '—'}</div></div>
                 <div class="text-right flex-shrink-0"><div class="text-sm font-black text-emerald-300">+₦${fmt(r.reward)}</div><div class="text-[8px] text-slate-500">${Number(r.qualifying_referrals_at_spin || 0)} qualifying</div></div>
@@ -3277,15 +3277,39 @@ function updateVipFeatureVisibility() {
     wrap.classList.toggle('hidden', !active);
 }
 
-function renderWealthPlanCards(plans) {
+function renderWealthPlanCards(plans, existingPositions = []) {
     const grid = document.getElementById('wealthPlanGrid');
     if (!grid) return;
     const normalizedPlans = (Array.isArray(plans) ? plans : [])
         .map(normalizeWealthPlan)
         .filter(Boolean);
     const renderPlans = normalizedPlans.length ? normalizedPlans : WEALTH_CENTER_PLANS;
-    grid.innerHTML = renderPlans.map(plan => `
-        <div class="wealth-plan-card glass-panel rounded-2xl p-5 border-cyan-500/15 bg-gradient-to-b from-navy-850 to-navy-950 flex flex-col">
+    const nowMs = Date.now();
+    const activePlanCodes = new Set((Array.isArray(existingPositions) ? existingPositions : [])
+        .filter(pos => {
+            const status = String(pos?.status ?? '').trim().toLowerCase();
+            if (status !== 'active') return false;
+            const maturityMs = Date.parse(pos?.maturity_at || '');
+            // A plan blocks the same level only while it is still running.
+            // Once maturity is reached, that level becomes available again.
+            return !Number.isNaN(maturityMs) ? maturityMs > nowMs : !Boolean(pos?.maturity_ready);
+        })
+        .map(pos => String(pos?.plan_code ?? '').trim().toUpperCase())
+        .filter(Boolean));
+
+    grid.innerHTML = renderPlans.map(plan => {
+        const normalizedCode = String(plan.code).trim().toUpperCase();
+        const alreadyActive = activePlanCodes.has(normalizedCode);
+        const cardClass = alreadyActive ? 'opacity-75' : '';
+        const inputDisabled = alreadyActive ? 'disabled' : '';
+        const buttonClass = alreadyActive
+            ? 'w-full h-11 rounded-xl mt-3 text-xs font-black text-slate-500 bg-slate-800/80 border border-white/10 cursor-not-allowed'
+            : 'btn-primary-gradient w-full h-11 rounded-xl mt-3 text-xs font-black text-white flex items-center justify-center gap-2 active:scale-[0.98] transition';
+        const buttonContent = alreadyActive
+            ? '<i class="ph-bold ph-timer"></i> Active — Complete First'
+            : '<i class="ph-bold ph-lock-key-open"></i> Start Plan';
+        return `
+        <div class="wealth-plan-card glass-panel rounded-2xl p-5 border-cyan-500/15 bg-gradient-to-b from-navy-850 to-navy-950 flex flex-col ${cardClass}">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-[9px] font-black tracking-[0.18em] text-cyan-300 uppercase font-display">${wealthEsc(plan.code)}</div>
@@ -3301,11 +3325,11 @@ function renderWealthPlanCards(plans) {
             <div class="mt-3 text-[9px] text-slate-500 leading-relaxed">Allowed amount: ₦${fmt(plan.min)} — ₦${fmt(plan.max)}</div>
             <div class="mt-4 glass-input rounded-xl px-3 py-2.5 flex items-center gap-2">
                 <span class="text-slate-500 text-xs">₦</span>
-                <input type="number" id="wealthAmount-${wealthEsc(plan.code)}" min="${plan.min}" max="${plan.max}" step="1" value="${plan.min}" class="bg-transparent w-full outline-none text-white text-sm font-bold" inputmode="numeric">
+                <input type="number" id="wealthAmount-${wealthEsc(plan.code)}" min="${plan.min}" max="${plan.max}" step="1" value="${plan.min}" class="bg-transparent w-full outline-none text-white text-sm font-bold" inputmode="numeric" ${inputDisabled}>
             </div>
-            <button type="button" onclick="startWealthPlan('${wealthEsc(plan.code)}')" class="btn-primary-gradient w-full h-11 rounded-xl mt-3 text-xs font-black text-white flex items-center justify-center gap-2 active:scale-[0.98] transition"><i class="ph-bold ph-lock-key-open"></i> Start Plan</button>
-        </div>
-    `).join('');
+            <button type="button" ${alreadyUsed ? 'disabled' : `onclick="startWealthPlan('${wealthEsc(plan.code)}')"`} class="${buttonClass}">${buttonContent}</button>
+        </div>`;
+    }).join('');
 }
 
 function renderWealthPositions(positions) {
@@ -3383,8 +3407,9 @@ async function loadWealthCenterPage() {
         const serverPlans = Array.isArray(state.plans)
             ? state.plans.map(normalizeWealthPlan).filter(Boolean)
             : [];
-        renderWealthPlanCards(serverPlans.length ? serverPlans : WEALTH_CENTER_PLANS);
-        renderWealthPositions(Array.isArray(state.positions) ? state.positions : []);
+        const positions = Array.isArray(state.positions) ? state.positions : [];
+        renderWealthPlanCards(serverPlans.length ? serverPlans : WEALTH_CENTER_PLANS, positions);
+        renderWealthPositions(positions);
     } catch (e) {
         console.error('Wealth Center load error:', e);
         if (grid) grid.innerHTML = '<div class="md:col-span-3 text-center py-8 text-xs text-red-400">Unable to load Wealth Center right now.</div>';
@@ -3663,4 +3688,3 @@ function checkReferralLink() {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
-
