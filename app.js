@@ -3510,10 +3510,6 @@ function renderLuckyHeartHistory(rows) {
 
 async function loadLuckyHeartPage() {
     if (!currentUser || !supabase) return;
-    // Remove legacy copy from older cached builds if it is still present in the DOM.
-    document.querySelectorAll('#luckyHeartPage *').forEach(node => {
-        if (node.children.length === 0 && /current\s+eligible\s+rewards?/i.test(node.textContent || '')) node.remove();
-    });
     const tier = getActiveNewFeatureVipTier(currentUser);
     const btn = document.getElementById('luckyHeartSpinBtn');
     if (btn) btn.disabled = true;
@@ -3570,28 +3566,22 @@ async function spinLuckyHeart() {
         if (error) throw error;
         const row = Array.isArray(data) ? data[0] : data;
         const reward = Number(row?.reward || 0);
+        // Ten visual sectors are always shown. Only the three currently configured
+        // server-side prize outcomes are allowed to drive the pointer.
         const prizeToSegment = {
             '₦699': 0,
             '₦1,999': 1,
-            '₦2,999': 2,
-            '₦5,999': 3,
-            '₦9,999': 4,
-            '₦19,999': 5,
-            '₦39,999': 6,
-            '₦69,999': 7,
-            '₦89,999': 8,
-            '₦100,000': 9
+            '₦2,999': 2
         };
-        // The database is authoritative. The visible wheel has ten equal 36° sectors,
-        // and the pointer always aligns to the exact sector returned by the server.
-        // Current server payouts are ₦699, ₦1,999 and ₦2,999; the other labels remain
-        // visible on the wheel but are not selected by the current server payout rules.
-        const segmentIndex = Object.prototype.hasOwnProperty.call(prizeToSegment, row?.prize_label)
-            ? prizeToSegment[row.prize_label]
-            : Math.max(0, Math.min(9, Number(row?.segment_index || 0)));
+        if (!Object.prototype.hasOwnProperty.call(prizeToSegment, row?.prize_label)) {
+            throw new Error('Invalid Lucky Heart prize result');
+        }
+        const segmentIndex = prizeToSegment[row.prize_label];
+        // Ten equal 36° segments. The pointer lands on the exact segment
+        // corresponding to the server-returned prize label.
         const segmentCenter = segmentIndex * 36;
         const currentMod = ((luckyHeartRotation % 360) + 360) % 360;
-        const align = (360 - segmentCenter - currentMod + 360) % 360;
+        const align = (360 - segmentCenter - currentMod) % 360;
         luckyHeartRotation += 360 * 6 + align;
         if (wheel) wheel.style.transform = `rotate(${luckyHeartRotation}deg)`;
         await new Promise(resolve => setTimeout(resolve, 4400));
