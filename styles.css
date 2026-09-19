@@ -47,6 +47,11 @@ html, body {
    F/H WEALTH CENTER + LUCKY HEART + PWA INSTALL
    ======================================================== */
 .new-feature-card { position: relative; overflow: hidden; }
+#newVipFeatures .new-feature-icon { width: 40px; height: 40px; border-radius: 13px; }
+#newVipFeatures .new-feature-card { min-height: 132px; }
+@media (max-width: 420px) {
+    #newVipFeatures .new-feature-card { min-height: 124px; }
+}
 .new-feature-card::after {
     content: '';
     position: absolute;
@@ -136,6 +141,15 @@ html, body {
     transition: transform 4.2s cubic-bezier(.12,.72,.13,1);
     will-change: transform;
 }
+.lucky-heart-wheel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0deg 35deg, rgba(255,255,255,.18) 35deg 36deg);
+    pointer-events: none;
+    z-index: 2;
+}
 .lucky-heart-wheel::before {
     content: '';
     position: absolute;
@@ -148,16 +162,21 @@ html, body {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 41%;
-    transform-origin: 0 0;
+    width: 36%;
+    height: 24px;
+    transform-origin: 0 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    font-size: clamp(9px, 2.5vw, 12px);
-    line-height: 1.05;
+    font-size: clamp(9px, 2.3vw, 12px);
+    line-height: 1;
     font-weight: 900;
     color: #eef2ff;
     text-shadow: 0 1px 5px rgba(0,0,0,.7);
     pointer-events: none;
-    transform: rotate(var(--angle)) translate(6px,-50%);
+    z-index: 3;
+    transform: rotate(var(--angle)) translateX(12px) translateY(-50%);
 }
 .lucky-wheel-label-0 { --angle: 18deg; }
 .lucky-wheel-label-1 { --angle: 54deg; }
