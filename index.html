@@ -18,6 +18,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script>
+        // Capture the install prompt as early as possible. app.js consumes this value.
+        window.__fhDeferredInstallPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(event) {
+            event.preventDefault();
+            window.__fhDeferredInstallPrompt = event;
+            window.dispatchEvent(new Event('fh-install-ready'));
+        });
+        window.addEventListener('appinstalled', function() {
+            window.__fhDeferredInstallPrompt = null;
+        });
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -241,6 +253,9 @@
                 </div>
                 <h1 class="text-3xl sm:text-4xl font-black tracking-tight brand-gradient-text font-display">Flux Haven</h1>
                 <p class="text-slate-400 mt-2 text-xs sm:text-sm font-medium tracking-wide">Elite Financial Client Portal</p>
+                <button type="button" id="installAuthBtn" onclick="installFluxHavenApp()" class="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 text-[10px] font-black uppercase tracking-wider hover:bg-cyan-500/15 transition" title="Install Flux Haven">
+                    <i class="ph-fill ph-download-simple"></i> Install Flux Haven
+                </button>
             </div>
 
             <div class="glass-panel p-6 sm:p-8 rounded-3xl border-white/10 shadow-2xl relative">
@@ -317,7 +332,11 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="installHeaderBtn" onclick="installFluxHavenApp()" class="flex h-10 items-center gap-1.5 px-3 rounded-2xl bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 hover:bg-cyan-500/15 transition" title="Install Flux Haven">
+                        <i class="ph-fill ph-download-simple text-base"></i>
+                        <span class="hidden sm:inline text-[9px] font-black uppercase tracking-wider">Install</span>
+                    </button>
                     <button type="button" id="adminLaunchBtn" onclick="navigateTo('adminPage')" class="hidden w-10 h-10 rounded-2xl bg-blue-600/20 text-cyan-400 border border-blue-500/30 items-center justify-center transition hover:bg-blue-600/30">
                         <i class="ph-fill ph-shield-check text-xl"></i>
                     </button>
@@ -325,96 +344,6 @@
                         <i class="ph ph-user text-lg"></i>
                     </button>
                 </div>
-            </div>
-
-            <!-- SURPRISE GIFT LAUNCHER -->
-            <div class="mb-6 z-10 relative">
-                <button type="button" onclick="openGiftCodeModal()" class="gift-launcher w-full glass-panel rounded-2xl p-4 sm:p-5 flex items-center gap-4 border-amber-400/25 bg-gradient-to-r from-amber-500/10 via-transparent to-blue-500/5 hover:border-amber-400/50 transition-all active:scale-[0.99] relative overflow-hidden">
-                    <div class="gift-launcher-glow"></div>
-                    <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400/25 to-amber-600/10 border border-amber-300/30 flex items-center justify-center flex-shrink-0 shadow-[0_0_25px_rgba(212,175,55,0.18)]">
-                        <i class="ph-fill ph-gift text-2xl text-accent-gold"></i>
-                    </div>
-                    <div class="flex-1 text-left relative">
-                        <div class="flex items-center gap-2">
-                            <div class="text-sm font-black text-white font-display">Surprise Gift</div>
-                            <span class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-300/20 text-amber-300">Daily</span>
-                        </div>
-                        <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Have today's code? Enter it to claim your random reward.</div>
-                    </div>
-                    <i class="ph-bold ph-caret-right text-slate-500 relative"></i>
-                </button>
-            </div>
-
-            <!-- NEW VIP FEATURES -->
-            <div id="newVipFeatures" class="hidden mb-6 z-10 relative space-y-3">
-                <div class="flex items-center justify-between px-1">
-                    <div>
-                        <div class="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase font-display">New VIP Features</div>
-                        <div class="text-[10px] text-slate-500 mt-0.5">Exclusive tools available to active VIP members</div>
-                    </div>
-                    <span class="text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-cyan-400/10 border border-cyan-300/20 text-cyan-300">VIP1–VIP6</span>
-                </div>
-
-                <button type="button" onclick="navigateTo('wealthCenterPage')" class="new-feature-card wealth-feature-card w-full glass-panel rounded-2xl p-4 flex items-center gap-4 border-cyan-400/20 hover:border-cyan-400/45 transition-all active:scale-[0.99]">
-                    <div class="new-feature-icon wealth-feature-icon">
-                        <i class="ph-fill ph-chart-line-up text-2xl"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <div class="flex items-center gap-2">
-                            <div class="text-sm font-black text-white font-display">F/H Wealth Center</div>
-                            <span class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-300/20 text-cyan-300">NEW</span>
-                        </div>
-                        <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">5-day, 15-day and 30-day wealth plans with visual maturity progress.</div>
-                    </div>
-                    <i class="ph-bold ph-caret-right text-slate-500"></i>
-                </button>
-
-                <button type="button" onclick="navigateTo('luckyHeartPage')" class="new-feature-card lucky-heart-feature-card w-full glass-panel rounded-2xl p-4 flex items-center gap-4 border-pink-400/20 hover:border-pink-400/45 transition-all active:scale-[0.99]">
-                    <div class="new-feature-icon lucky-heart-feature-icon">
-                        <i class="ph-fill ph-heart text-2xl"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <div class="flex items-center gap-2">
-                            <div class="text-sm font-black text-white font-display">Lucky Heart <span aria-hidden="true">❤️</span></div>
-                            <span class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-400/10 border border-pink-300/20 text-pink-300">24/7</span>
-                        </div>
-                        <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Earn daily spins from direct referrals who activate VIP1–VIP6.</div>
-                    </div>
-                    <i class="ph-bold ph-caret-right text-slate-500"></i>
-                </button>
-            </div>
-
-            <!-- APP INSTALL PROMPT -->
-            <div id="appInstallBanner" class="hidden mb-6 z-10 relative">
-                <div class="glass-panel rounded-2xl p-4 border-blue-400/20 bg-gradient-to-r from-blue-500/10 via-transparent to-cyan-500/5 flex items-center gap-3">
-                    <div class="w-11 h-11 rounded-2xl bg-blue-500/15 border border-blue-400/20 flex items-center justify-center text-cyan-300 flex-shrink-0">
-                        <i class="ph-fill ph-download-simple text-xl"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-black text-white">Install Flux Haven</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">Add Flux Haven to your device for faster access like an app.</div>
-                    </div>
-                    <button type="button" onclick="installFluxHavenApp()" class="btn-primary-gradient px-4 py-2.5 rounded-xl text-[10px] font-black text-white flex-shrink-0">Install</button>
-                </div>
-            </div>
-
-            <!-- Sunday Complete Lock Banner (Home) -->
-            <div id="homeSundayBanner" class="hidden mb-6 glass-panel border-amber-500/30 bg-amber-500/10 rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-300">
-                    <i class="ph-fill ph-moon-stars text-xl"></i>
-                </div>
-                <div class="flex-1">
-                    <div class="text-xs font-black text-amber-300 uppercase tracking-wide">Sunday Platform Rest Day</div>
-                    <div class="text-[11px] text-amber-200/80 mt-0.5 leading-snug">Today is Sunday. All activities are unavailable today. Please come back on Monday.</div>
-                </div>
-            </div>
-
-            <!-- Announcement Banner -->
-            <div id="announcementBanner" class="hidden mb-6 glass-panel border-blue-500/25 bg-blue-500/5 rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
-                <div class="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-cyan-400">
-                    <i class="ph-fill ph-megaphone text-base"></i>
-                </div>
-                <div class="text-xs sm:text-sm text-slate-200 font-medium leading-snug flex-1" id="announcementText"></div>
             </div>
 
             <!-- Main Financial Overview Card -->
@@ -447,6 +376,74 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- SURPRISE GIFT LAUNCHER -->
+            <div class="mb-6 z-10 relative">
+                <button type="button" onclick="openGiftCodeModal()" class="gift-launcher w-full glass-panel rounded-2xl p-4 sm:p-5 flex items-center gap-4 border-amber-400/25 bg-gradient-to-r from-amber-500/10 via-transparent to-blue-500/5 hover:border-amber-400/50 transition-all active:scale-[0.99] relative overflow-hidden">
+                    <div class="gift-launcher-glow"></div>
+                    <div class="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400/25 to-amber-600/10 border border-amber-300/30 flex items-center justify-center flex-shrink-0 shadow-[0_0_25px_rgba(212,175,55,0.18)]">
+                        <i class="ph-fill ph-gift text-2xl text-accent-gold"></i>
+                    </div>
+                    <div class="flex-1 text-left relative">
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-black text-white font-display">Surprise Gift</div>
+                            <span class="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-300/20 text-amber-300">Daily</span>
+                        </div>
+                        <div class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Have today's code? Enter it to claim your random reward.</div>
+                    </div>
+                    <i class="ph-bold ph-caret-right text-slate-500 relative"></i>
+                </button>
+            </div>
+
+            <!-- NEW FEATURES — VISIBLE TO EVERY SIGNED-IN USER, VIP REQUIRED TO USE -->
+            <div id="newVipFeatures" class="mb-5 z-10 relative">
+                <div class="flex items-center justify-between px-1 mb-2.5">
+                    <div class="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase font-display">New Features</div>
+                    <span class="text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-cyan-400/10 border border-cyan-300/20 text-cyan-300">VIP TO USE</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" onclick="navigateTo('wealthCenterPage')" class="new-feature-card wealth-feature-card min-w-0 glass-panel rounded-2xl p-3.5 border-cyan-400/20 hover:border-cyan-400/45 transition-all active:scale-[0.99] text-left">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="new-feature-icon wealth-feature-icon">
+                                <i class="ph-fill ph-chart-line-up text-xl"></i>
+                            </div>
+                            <span class="text-[7px] font-black uppercase tracking-wider px-1.5 py-1 rounded-full bg-cyan-400/10 border border-cyan-300/20 text-cyan-300">F/H</span>
+                        </div>
+                        <div class="text-[11px] sm:text-xs font-black text-white mt-3 font-display">Wealth Center</div>
+                        <div class="text-[9px] sm:text-[10px] leading-snug text-slate-500 mt-1">5, 15 &amp; 30-day plans</div>
+                    </button>
+
+                    <button type="button" onclick="navigateTo('luckyHeartPage')" class="new-feature-card lucky-heart-feature-card min-w-0 glass-panel rounded-2xl p-3.5 border-pink-400/20 hover:border-pink-400/45 transition-all active:scale-[0.99] text-left">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="new-feature-icon lucky-heart-feature-icon">
+                                <i class="ph-fill ph-heart text-xl"></i>
+                            </div>
+                            <span class="text-[7px] font-black uppercase tracking-wider px-1.5 py-1 rounded-full bg-pink-400/10 border border-pink-300/20 text-pink-300">24/7</span>
+                        </div>
+                        <div class="text-[11px] sm:text-xs font-black text-white mt-3 font-display">Lucky Heart ❤️</div>
+                        <div class="text-[9px] sm:text-[10px] leading-snug text-slate-500 mt-1">Daily spin rewards</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sunday Complete Lock Banner (Home) -->
+            <div id="homeSundayBanner" class="hidden mb-6 glass-panel border-amber-500/30 bg-amber-500/10 rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-300">
+                    <i class="ph-fill ph-moon-stars text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="text-xs font-black text-amber-300 uppercase tracking-wide">Sunday Platform Rest Day</div>
+                    <div class="text-[11px] text-amber-200/80 mt-0.5 leading-snug">Today is Sunday. All activities are unavailable today. Please come back on Monday.</div>
+                </div>
+            </div>
+
+            <!-- Announcement Banner -->
+            <div id="announcementBanner" class="hidden mb-6 glass-panel border-blue-500/25 bg-blue-500/5 rounded-2xl p-4 flex items-center gap-3 relative overflow-hidden">
+                <div class="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-cyan-400">
+                    <i class="ph-fill ph-megaphone text-base"></i>
+                </div>
+                <div class="text-xs sm:text-sm text-slate-200 font-medium leading-snug flex-1" id="announcementText"></div>
             </div>
 
             <!-- WhatsApp Community Button -->
@@ -1528,7 +1525,7 @@
         </div>
     </nav>
 
-    <script src="./app.js?v=20260919-admin-reset-feature-preview-7"></script>
+    <script src="./app.js?v=20260919-final-ui-10"></script>
 
 </div>
 </body>
