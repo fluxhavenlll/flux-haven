@@ -191,11 +191,6 @@ function navigateTo(page) {
     if (page === 'adminPage' && !isAdminUser) {
         return showToast('🔒 Root administrative access required');
     }
-    // Admins may open the new-feature pages for read-only preview/testing after an
-    // admin-only financial reset. Normal users still require active VIP1–VIP6.
-    if ((page === 'wealthCenterPage' || page === 'luckyHeartPage') && !isAdminUser && !getActiveNewFeatureVipTier(currentUser)) {
-        return showToast('🔒 An active VIP1–VIP6 plan is required for this feature.');
-    }
     if (page !== 'profilePage' && page !== 'homePage' && page !== 'adminPage' && page !== 'historyPage' && page !== 'referralPage' && page !== 'tasksPage' && page !== 'wealthCenterPage' && page !== 'luckyHeartPage' &&
         (!currentUser.bank_name || !currentUser.account_number)) {
         showToast('⚠️ Please link your settlement bank details in Profile first');
@@ -3276,10 +3271,9 @@ function getActiveNewFeatureVipTier(user) {
 function updateVipFeatureVisibility() {
     const wrap = document.getElementById('newVipFeatures');
     if (!wrap) return;
-    // Keep new features hidden from non-VIP users, but let admins see them after
-    // an admin-only balance reset so the features remain available for oversight.
-    const active = Boolean(currentUser?.role === 'admin' || getActiveNewFeatureVipTier(currentUser));
-    wrap.classList.toggle('hidden', !active);
+    // The new features are visible to every signed-in user. VIP1–VIP6 is required
+    // only when a user attempts an actual financial action inside the feature.
+    wrap.classList.remove('hidden');
 }
 
 function renderWealthPlanCards(plans, existingPositions = []) {
@@ -3295,26 +3289,29 @@ function renderWealthPlanCards(plans, existingPositions = []) {
             const status = String(pos?.status ?? '').trim().toLowerCase();
             if (status !== 'active') return false;
             const maturityMs = Date.parse(pos?.maturity_at || '');
-            // A plan blocks the same level only while it is still running.
-            // Once maturity is reached, that level becomes available again.
             return !Number.isNaN(maturityMs) ? maturityMs > nowMs : !Boolean(pos?.maturity_ready);
         })
         .map(pos => String(pos?.plan_code ?? '').trim().toUpperCase())
         .filter(Boolean));
 
+    const canStart = Boolean(getActiveNewFeatureVipTier(currentUser));
+
     grid.innerHTML = renderPlans.map(plan => {
         const normalizedCode = String(plan.code).trim().toUpperCase();
         const alreadyActive = activePlanCodes.has(normalizedCode);
-        const cardClass = alreadyActive ? 'opacity-75' : '';
-        const inputDisabled = alreadyActive ? 'disabled' : '';
-        const buttonClass = alreadyActive
-            ? 'w-full h-11 rounded-xl mt-3 text-xs font-black text-slate-500 bg-slate-800/80 border border-white/10 cursor-not-allowed'
-            : 'btn-primary-gradient w-full h-11 rounded-xl mt-3 text-xs font-black text-white flex items-center justify-center gap-2 active:scale-[0.98] transition';
-        const buttonContent = alreadyActive
-            ? '<i class="ph-bold ph-timer"></i> Active — Complete First'
-            : '<i class="ph-bold ph-lock-key-open"></i> Start Plan';
+        const blocked = alreadyActive || !canStart;
+        const inputDisabled = blocked ? 'disabled' : '';
+        let buttonClass = 'btn-primary-gradient w-full h-11 rounded-xl mt-3 text-xs font-black text-white flex items-center justify-center gap-2 active:scale-[0.98] transition';
+        let buttonContent = '<i class="ph-bold ph-lock-key-open"></i> Start Plan';
+        if (alreadyActive) {
+            buttonClass = 'w-full h-11 rounded-xl mt-3 text-xs font-black text-slate-500 bg-slate-800/80 border border-white/10 cursor-not-allowed';
+            buttonContent = '<i class="ph-bold ph-timer"></i> Active — Complete First';
+        } else if (!canStart) {
+            buttonClass = 'w-full h-11 rounded-xl mt-3 text-xs font-black text-amber-200 bg-amber-400/10 border border-amber-400/20 cursor-not-allowed';
+            buttonContent = '<i class="ph-bold ph-lock"></i> VIP1–VIP6 Required';
+        }
         return `
-        <div class="wealth-plan-card glass-panel rounded-2xl p-5 border-cyan-500/15 bg-gradient-to-b from-navy-850 to-navy-950 flex flex-col ${cardClass}">
+        <div class="wealth-plan-card glass-panel rounded-2xl p-5 border-cyan-500/15 bg-gradient-to-b from-navy-850 to-navy-950 flex flex-col ${blocked ? 'opacity-90' : ''}">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-[9px] font-black tracking-[0.18em] text-cyan-300 uppercase font-display">${wealthEsc(plan.code)}</div>
@@ -3332,7 +3329,7 @@ function renderWealthPlanCards(plans, existingPositions = []) {
                 <span class="text-slate-500 text-xs">₦</span>
                 <input type="number" id="wealthAmount-${wealthEsc(plan.code)}" min="${plan.min}" max="${plan.max}" step="1" value="${plan.min}" class="bg-transparent w-full outline-none text-white text-sm font-bold" inputmode="numeric" ${inputDisabled}>
             </div>
-            <button type="button" ${alreadyActive ? 'disabled' : `onclick="startWealthPlan('${wealthEsc(plan.code)}')"`} class="${buttonClass}">${buttonContent}</button>
+            <button type="button" ${blocked ? 'disabled' : `onclick="startWealthPlan('${wealthEsc(plan.code)}')"`} class="${buttonClass}">${buttonContent}</button>
         </div>`;
     }).join('');
 }
@@ -3391,33 +3388,14 @@ async function loadWealthCenterPage() {
     const grid = document.getElementById('wealthPlanGrid');
     const list = document.getElementById('wealthPositionsList');
     if (!currentUser) return;
-    const isAdminUser = currentUser.role === 'admin';
-    const tier = getActiveNewFeatureVipTier(currentUser);
 
-    // Admin preview mode: show the feature/plan cards after an admin financial
-    // reset without granting the admin a VIP entitlement. Actual start/claim RPCs
-    // remain VIP-gated for normal financial operations.
-    if (!tier && isAdminUser) {
-        noVip?.classList.add('hidden');
-        activeState?.classList.remove('hidden');
-        if (grid) grid.innerHTML = '<div class="md:col-span-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-[10px] text-amber-200">Admin preview: F/H Wealth Center is visible for oversight/testing. A user must have active VIP1–VIP6 to start a plan.</div>';
-        renderWealthPlanCards(WEALTH_CENTER_PLANS, []);
-        const buttons = grid?.querySelectorAll('button[onclick*="startWealthPlan"]') || [];
-        buttons.forEach(btn => { btn.disabled = true; btn.removeAttribute('onclick'); btn.textContent = 'Admin Preview'; btn.className = 'w-full h-11 rounded-xl text-xs font-black text-amber-200 bg-amber-400/10 border border-amber-400/20 cursor-not-allowed'; });
-        if (list) list.innerHTML = '<div class="glass-panel rounded-2xl p-6 text-center text-xs text-slate-500 border-white/5">No admin-owned Wealth Center positions.</div>';
-        return;
-    }
-
-    if (!tier) {
-        noVip?.classList.remove('hidden');
-        activeState?.classList.add('hidden');
-        return;
-    }
+    // Everyone can view the feature. Only active VIP1–VIP6 can actually start
+    // or settle a Wealth Center plan. The state RPC is read-only for the viewer.
     noVip?.classList.add('hidden');
     activeState?.classList.remove('hidden');
-    if (!supabase) return;
-    if (grid) grid.innerHTML = '<div class="md:col-span-3 text-center py-8 text-xs text-slate-500">Loading wealth plans...</div>';
-    if (list) list.innerHTML = '<div class="text-center py-8 text-xs text-slate-500">Loading your wealth plans...</div>';
+    if (grid) grid.innerHTML = '<div class="md:col-span-3 text-center py-8 text-xs text-slate-500">Loading F/H Wealth Center...</div>';
+    if (list) list.innerHTML = '<div class="text-center py-8 text-xs text-slate-500">Loading your Wealth Center plans...</div>';
+
     try {
         const { data, error } = await supabase.rpc('get_wealth_center_state', {
             p_user_id: currentUser.id,
@@ -3433,8 +3411,10 @@ async function loadWealthCenterPage() {
         renderWealthPositions(positions);
     } catch (e) {
         console.error('Wealth Center load error:', e);
-        if (grid) grid.innerHTML = '<div class="md:col-span-3 text-center py-8 text-xs text-red-400">Unable to load Wealth Center right now.</div>';
-        if (list) list.innerHTML = '<div class="text-center py-8 text-xs text-red-400">Unable to load your wealth plans.</div>';
+        // Preserve visibility even if the state endpoint has a transient error.
+        renderWealthPlanCards(WEALTH_CENTER_PLANS, []);
+        if (list) list.innerHTML = '<div class="text-center py-6 text-xs text-red-400">Unable to load your Wealth Center plans right now.</div>';
+        showToast('⚠️ Wealth Center details could not be refreshed.');
     }
 }
 
@@ -3472,6 +3452,7 @@ async function startWealthPlan(planCode) {
 
 async function claimWealthCenterMaturity(positionId) {
     if (!supabase || !currentUser) return showToast('Please sign in first.');
+    if (!getActiveNewFeatureVipTier(currentUser)) return showToast('An active VIP1–VIP6 plan is required for Wealth Center settlement.');
     if (!confirm('Claim this matured Wealth Center plan and credit the principal plus profit to your available balance?')) return;
     toggleLoader(true, 'Settling Wealth Center maturity...');
     try {
@@ -3526,31 +3507,11 @@ function renderLuckyHeartHistory(rows) {
 }
 
 async function loadLuckyHeartPage() {
-    if (!currentUser) return;
+    if (!currentUser || !supabase) return;
     const tier = getActiveNewFeatureVipTier(currentUser);
     const btn = document.getElementById('luckyHeartSpinBtn');
-    const isAdminUser = currentUser.role === 'admin';
-    if (!tier && isAdminUser) {
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
-        const earned = document.getElementById('luckyHeartEarned');
-        const used = document.getElementById('luckyHeartUsed');
-        const remaining = document.getElementById('luckyHeartRemaining');
-        const qual = document.getElementById('luckyHeartQualificationText');
-        if (earned) earned.textContent = '—';
-        if (used) used.textContent = '—';
-        if (remaining) remaining.textContent = '—';
-        if (qual) qual.textContent = 'Admin preview mode — VIP entitlement required for real spins.';
-        setLuckyHeartMessage('Admin preview only. An active VIP1–VIP6 user account is required to spin Lucky Heart.');
-        renderLuckyHeartHistory([]);
-        return;
-    }
-    if (!tier) {
-        if (btn) btn.disabled = true;
-        setLuckyHeartMessage('An active VIP1–VIP6 plan is required for Lucky Heart.');
-        return;
-    }
-    if (!supabase) return;
     if (btn) btn.disabled = true;
+
     try {
         const { data, error } = await supabase.rpc('get_lucky_heart_state', {
             p_user_id: currentUser.id,
@@ -3558,21 +3519,32 @@ async function loadLuckyHeartPage() {
         });
         if (error) throw error;
         const state = data || {};
-        document.getElementById('luckyHeartEarned').textContent = Number(state.spins_earned || 0);
-        document.getElementById('luckyHeartUsed').textContent = Number(state.spins_used || 0);
-        document.getElementById('luckyHeartRemaining').textContent = Number(state.spins_remaining || 0);
-        document.getElementById('luckyHeartQualificationText').textContent = `${Number(state.qualifying_referrals || 0)} qualifying VIP activations recorded today.`;
+        const earned = Number(state.spins_earned || 0);
+        const used = Number(state.spins_used || 0);
+        const remaining = Number(state.spins_remaining || 0);
+        document.getElementById('luckyHeartEarned').textContent = earned;
+        document.getElementById('luckyHeartUsed').textContent = used;
+        document.getElementById('luckyHeartRemaining').textContent = remaining;
+        document.getElementById('luckyHeartQualificationText').textContent = `${Number(state.qualifying_referrals || 0)} qualifying direct VIP activations recorded today.`;
         renderLuckyHeartHistory(state.recent_spins || []);
-        if (Number(state.spins_remaining || 0) <= 0) {
-            setLuckyHeartMessage('No Lucky Heart spins are available right now. A qualifying direct VIP activation today creates a new spin.');
+
+        if (!tier) {
+            setLuckyHeartMessage('You can view Lucky Heart, but an active VIP1–VIP6 plan is required to spin.');
+        } else if (remaining <= 0) {
+            setLuckyHeartMessage('No Lucky Heart spins are available right now. A qualifying direct VIP activation today creates a spin.');
         } else {
             const el = document.getElementById('luckyHeartMessage');
             if (el) el.className = 'hidden';
         }
-        if (btn) btn.disabled = Number(state.spins_remaining || 0) <= 0;
+
+        if (btn) btn.disabled = !tier || remaining <= 0;
     } catch (e) {
         console.error('Lucky Heart load error:', e);
-        setLuckyHeartMessage('Unable to load Lucky Heart right now.');
+        document.getElementById('luckyHeartEarned').textContent = '0';
+        document.getElementById('luckyHeartUsed').textContent = '0';
+        document.getElementById('luckyHeartRemaining').textContent = '0';
+        renderLuckyHeartHistory([]);
+        setLuckyHeartMessage('Unable to refresh Lucky Heart right now.');
         if (btn) btn.disabled = true;
     }
 }
@@ -3593,10 +3565,13 @@ async function spinLuckyHeart() {
         if (error) throw error;
         const row = Array.isArray(data) ? data[0] : data;
         const reward = Number(row?.reward || 0);
-        const segmentIndex = Math.max(0, Math.min(2, Number(row?.segment_index || 1) - 1));
-        const segmentCenter = segmentIndex * 36 + 18;
+        const prizeToSegment = { '₦699': 1, '₦1,999': 2, '₦2,999': 3 };
+        const returnedIndex = prizeToSegment[row?.prize_label] || Number(row?.segment_index || 1);
+        const segmentIndex = Math.max(1, Math.min(10, returnedIndex));
+        const segmentCenter = (segmentIndex - 1) * 36 + 18;
+        const pointerAngle = 270; // top pointer in CSS/conic-gradient coordinate space
         const currentMod = ((luckyHeartRotation % 360) + 360) % 360;
-        const align = (360 - segmentCenter - currentMod + 360) % 360;
+        const align = (pointerAngle - segmentCenter - currentMod + 360) % 360;
         luckyHeartRotation += 360 * 6 + align;
         if (wheel) wheel.style.transform = `rotate(${luckyHeartRotation}deg)`;
         await new Promise(resolve => setTimeout(resolve, 4400));
@@ -3619,33 +3594,73 @@ async function spinLuckyHeart() {
 // ========================================================
 // PWA INSTALLATION
 // ========================================================
-let deferredInstallPrompt = null;
+let deferredInstallPrompt = window.__fhDeferredInstallPrompt || null;
+
+function isFluxHavenStandalone() {
+    return Boolean(
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        window.navigator.standalone === true
+    );
+}
+
+function getInstallHelpText() {
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) {
+        return 'On iPhone/iPad: tap Share, then “Add to Home Screen”.';
+    }
+    if (/Android/i.test(ua)) {
+        return 'On Android: use the browser menu and choose “Install app” or “Add to Home screen”.';
+    }
+    return 'Use your browser menu/address-bar install option to add Flux Haven as an app.';
+}
 
 function updatePwaInstallVisibility() {
+    const installButtons = [
+        document.getElementById('installHeaderBtn'),
+        document.getElementById('installAuthBtn')
+    ].filter(Boolean);
     const banner = document.getElementById('appInstallBanner');
-    if (!banner) return;
-    const standalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
-    const iosStandalone = window.navigator.standalone === true;
-    const dismissed = localStorage.getItem('fh_install_banner_dismissed') === '1';
-    banner.classList.toggle('hidden', !deferredInstallPrompt || standalone || iosStandalone || dismissed);
+    const standalone = isFluxHavenStandalone();
+
+    installButtons.forEach(button => {
+        button.classList.toggle('hidden', standalone);
+        button.title = deferredInstallPrompt ? 'Install Flux Haven' : 'Install Flux Haven / Add to Home Screen';
+    });
+    if (banner) {
+        banner.classList.toggle('hidden', standalone);
+    }
 }
 
 async function installFluxHavenApp() {
-    if (!deferredInstallPrompt) return showToast('App installation is not available on this browser right now.');
-    deferredInstallPrompt.prompt();
-    try { await deferredInstallPrompt.userChoice; } catch (_) {}
+    if (isFluxHavenStandalone()) return;
+    if (!deferredInstallPrompt) {
+        showToast('📲 ' + getInstallHelpText());
+        return;
+    }
+    try {
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+    } catch (_) {}
     deferredInstallPrompt = null;
+    window.__fhDeferredInstallPrompt = null;
     updatePwaInstallVisibility();
 }
+
+window.addEventListener('fh-install-ready', () => {
+    deferredInstallPrompt = window.__fhDeferredInstallPrompt || deferredInstallPrompt;
+    updatePwaInstallVisibility();
+});
 
 window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
+    window.__fhDeferredInstallPrompt = event;
     updatePwaInstallVisibility();
 });
 
 window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
+    window.__fhDeferredInstallPrompt = null;
     updatePwaInstallVisibility();
     showToast('✅ Flux Haven installed successfully.');
 });
@@ -3653,7 +3668,7 @@ window.addEventListener('appinstalled', () => {
 async function registerFluxHavenServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     try {
-        await navigator.serviceWorker.register('./sw.js', { scope: './' });
+        await navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' });
     } catch (e) {
         console.debug('Service worker registration unavailable:', e?.message || e);
     }
@@ -3664,6 +3679,7 @@ async function registerFluxHavenServiceWorker() {
 // ========================================================
 document.addEventListener('DOMContentLoaded', async () => {
     registerFluxHavenServiceWorker();
+    updatePwaInstallVisibility();
     if (!supabase && window.supabase) {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
