@@ -1161,26 +1161,53 @@
                 </div>
                 <div id="luckyHeartQualificationText" class="text-[10px] text-slate-500 mt-4">0 qualifying VIP activations recorded today.</div>
             </div>
-
             <div class="glass-panel rounded-[2rem] p-4 sm:p-7 border-pink-500/10 overflow-hidden">
-                <div class="text-center mb-5">
-                    <div class="text-[9px] font-black tracking-[0.22em] text-slate-500 uppercase font-display">Spin Board</div>
-                    <div class="text-sm sm:text-base font-black text-white mt-1">Lucky Heart</div>
-                                    </div>
+                <div class="text-center mb-4">
+                    <div class="text-sm sm:text-base font-black text-white mt-1">Lucky Heart <span aria-hidden="true">❤️</span></div>
+                </div>
 
                 <div class="lucky-heart-stage">
                     <div class="lucky-heart-pointer" aria-hidden="true"></div>
                     <div id="luckyHeartWheel" class="lucky-heart-wheel" aria-label="Lucky Heart prize wheel">
-                        <div class="lucky-wheel-segment lucky-wheel-label-0">₦699</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-1">₦1,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-2">₦2,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-3">₦5,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-4">₦9,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-5">₦19,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-6">₦39,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-7">₦69,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-8">₦89,999</div>
-                        <div class="lucky-wheel-segment lucky-wheel-label-9">₦100,000</div>
+                        <svg class="lucky-heart-wheel-svg" viewBox="0 0 100 100" role="img" aria-label="Lucky Heart prize wheel with ten prize spaces">
+                            <g class="lucky-heart-wheel-face">
+                                    <path class="lucky-heart-sector sector-0" d="M 50 50 L 34.55 2.45 A 50 50 0 0 1 65.45 2.45 Z"></path>
+                                    <path class="lucky-heart-sector sector-1" d="M 50 50 L 65.45 2.45 A 50 50 0 0 1 90.45 20.61 Z"></path>
+                                    <path class="lucky-heart-sector sector-2" d="M 50 50 L 90.45 20.61 A 50 50 0 0 1 100.00 50.00 Z"></path>
+                                    <path class="lucky-heart-sector sector-3" d="M 50 50 L 100.00 50.00 A 50 50 0 0 1 90.45 79.39 Z"></path>
+                                    <path class="lucky-heart-sector sector-4" d="M 50 50 L 90.45 79.39 A 50 50 0 0 1 65.45 97.55 Z"></path>
+                                    <path class="lucky-heart-sector sector-5" d="M 50 50 L 65.45 97.55 A 50 50 0 0 1 34.55 97.55 Z"></path>
+                                    <path class="lucky-heart-sector sector-6" d="M 50 50 L 34.55 97.55 A 50 50 0 0 1 9.55 79.39 Z"></path>
+                                    <path class="lucky-heart-sector sector-7" d="M 50 50 L 9.55 79.39 A 50 50 0 0 1 0.00 50.00 Z"></path>
+                                    <path class="lucky-heart-sector sector-8" d="M 50 50 L 0.00 50.00 A 50 50 0 0 1 9.55 20.61 Z"></path>
+                                    <path class="lucky-heart-sector sector-9" d="M 50 50 L 9.55 20.61 A 50 50 0 0 1 34.55 2.45 Z"></path>
+                                <g class="lucky-heart-divider-lines">
+                                        <line x1="50" y1="50" x2="34.55" y2="2.45"></line>
+                                        <line x1="50" y1="50" x2="65.45" y2="2.45"></line>
+                                        <line x1="50" y1="50" x2="90.45" y2="20.61"></line>
+                                        <line x1="50" y1="50" x2="100.00" y2="50.00"></line>
+                                        <line x1="50" y1="50" x2="90.45" y2="79.39"></line>
+                                        <line x1="50" y1="50" x2="65.45" y2="97.55"></line>
+                                        <line x1="50" y1="50" x2="34.55" y2="97.55"></line>
+                                        <line x1="50" y1="50" x2="9.55" y2="79.39"></line>
+                                        <line x1="50" y1="50" x2="0.00" y2="50.00"></line>
+                                        <line x1="50" y1="50" x2="9.55" y2="20.61"></line>
+                                </g>
+                                <circle cx="50" cy="50" r="47.5" class="lucky-heart-wheel-outline"></circle>
+                                <g class="lucky-heart-wheel-labels">
+                                        <text x="50.00" y="14.00" class="lucky-wheel-text">₦699</text>
+                                        <text x="71.16" y="20.88" class="lucky-wheel-text">₦1,999</text>
+                                        <text x="84.24" y="38.88" class="lucky-wheel-text">₦2,999</text>
+                                        <text x="84.24" y="61.12" class="lucky-wheel-text">₦5,999</text>
+                                        <text x="71.16" y="79.12" class="lucky-wheel-text">₦9,999</text>
+                                        <text x="50.00" y="86.00" class="lucky-wheel-text">₦19,999</text>
+                                        <text x="28.84" y="79.12" class="lucky-wheel-text">₦39,999</text>
+                                        <text x="15.76" y="61.12" class="lucky-wheel-text">₦69,999</text>
+                                        <text x="15.76" y="38.88" class="lucky-wheel-text">₦89,999</text>
+                                        <text x="28.84" y="20.88" class="lucky-wheel-text">₦100,000</text>
+                                </g>
+                            </g>
+                        </svg>
                     </div>
                     <div class="lucky-heart-wheel-center">
                         <button type="button" onclick="spinLuckyHeart()" id="luckyHeartSpinBtn" class="lucky-heart-spin-btn">
@@ -1524,7 +1551,7 @@
         </div>
     </nav>
 
-    <script src="./app.js?v=20260919-lucky-heart-final-15"></script>
+    <script src="./app.js?v=20260919-luckyheart-wheel-final-2"></script>
 
 </div>
 </body>
