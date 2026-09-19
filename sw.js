@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flux-haven-shell-v7';
+const CACHE_NAME = 'flux-haven-shell-v10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(request).then(response => {
+    fetch(request, { cache: request.mode === 'navigate' ? 'no-store' : 'default' }).then(response => {
       if (response && response.ok) {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
