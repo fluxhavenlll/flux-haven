@@ -3327,7 +3327,7 @@ function renderWealthPlanCards(plans, existingPositions = []) {
                 <span class="text-slate-500 text-xs">₦</span>
                 <input type="number" id="wealthAmount-${wealthEsc(plan.code)}" min="${plan.min}" max="${plan.max}" step="1" value="${plan.min}" class="bg-transparent w-full outline-none text-white text-sm font-bold" inputmode="numeric" ${inputDisabled}>
             </div>
-            <button type="button" ${alreadyUsed ? 'disabled' : `onclick="startWealthPlan('${wealthEsc(plan.code)}')"`} class="${buttonClass}">${buttonContent}</button>
+            <button type="button" ${alreadyActive ? 'disabled' : `onclick="startWealthPlan('${wealthEsc(plan.code)}')"`} class="${buttonClass}">${buttonContent}</button>
         </div>`;
     }).join('');
 }
